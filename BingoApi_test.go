@@ -1,15 +1,18 @@
 package BingoApi
 
 import (
-	"os"
+	"bytes"
+	"io/ioutil"
+	"net/http"
 	"testing"
 )
 
 func TestBingoApi_NewsSearch(t *testing.T) {
-	ClientKey := os.Getenv("CLIENT_KEY")
 
 	type fields struct {
-		ClientKey string
+		ClientKey  string
+		respString string
+		statusCode int
 	}
 	type args struct {
 		q string
@@ -20,20 +23,34 @@ func TestBingoApi_NewsSearch(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"test basic call", fields{ClientKey}, args{"microsoft"}, false},
+		{"test basic call with empty json resp", fields{"test key", "{}", 200}, args{"microsoft"}, false},
+		{"test basic call with invalid json", fields{"test key", "hello", 200}, args{"microsoft"}, true},
+		{"test basic call with 404", fields{"test key", "{}", 404}, args{"microsoft"}, true},
 	}
 	for _, tt := range tests {
+		// create a new reader with that JSON
+		r := ioutil.NopCloser(bytes.NewReader([]byte(tt.fields.respString)))
+		mock := NewMockCLient(&http.Response{
+			StatusCode: tt.fields.statusCode,
+			Body:       r,
+		}, nil)
 		t.Run(tt.name, func(t *testing.T) {
 			b := &BingoApi{
 				ClientKey: tt.fields.ClientKey,
+				Client:    mock,
 			}
-			got, err := b.NewsSearch(tt.args.q)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewsSearch() error = %v, wantErr %v", err, tt.wantErr)
+			_, err := b.NewsSearch(tt.args.q)
+			if mock.Url != "https://api.bing.microsoft.com/v7.0/news/search?freshness=Day&q="+tt.args.q {
+				t.Errorf("Invalid URL %s", mock.Url)
 				return
 			}
-			if got == nil || len(got.Value) <= 0 {
-				t.Errorf("NewsSearch() got = %v, want %v", got, tt.args.q)
+			if mock.Key != "test key" {
+				t.Errorf("Invalid KEY %s", mock.Key)
+				return
+			}
+			if err != nil && !tt.wantErr {
+				t.Errorf("error %s", err)
+				return
 			}
 		})
 	}

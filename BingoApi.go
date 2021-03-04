@@ -42,12 +42,17 @@ type NewsAnswer struct {
 	} `json:"value"`
 }
 
+type reqClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type BingoApi struct {
 	ClientKey string
+	Client    reqClient
 }
 
 func New(ClientKey string) *BingoApi {
-	return &BingoApi{ClientKey}
+	return &BingoApi{ClientKey, http.DefaultClient}
 }
 
 type Args struct {
@@ -66,8 +71,8 @@ func (b *BingoApi) NewsSearch(q string) (*NewsAnswer, error) {
 	req.Header.Add("Ocp-Apim-Subscription-Key", b.ClientKey)
 	param.Add("q", q)
 	param.Add("freshness", "Day")
-
-	res, err := http.DefaultClient.Do(req)
+	req.URL.RawQuery = param.Encode()
+	res, err := b.Client.Do(req)
 
 	// Close the connection.
 	defer func() {
