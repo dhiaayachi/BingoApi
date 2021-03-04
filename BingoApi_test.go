@@ -32,7 +32,7 @@ func TestBingoApi_NewsSearch(t *testing.T) {
 				t.Errorf("NewsSearch() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got.Value) <= 0 {
+			if got == nil || len(got.Value) <= 0 {
 				t.Errorf("NewsSearch() got = %v, want %v", got, tt.args.q)
 			}
 		})

@@ -3,6 +3,7 @@ package BingoApi
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -10,35 +11,35 @@ const baseUrl = "https://api.bing.microsoft.com/v7.0/"
 
 // This struct formats the answer provided by the Bing News Search API.
 type NewsAnswer struct {
-	ReadLink     string `json: "readLink"`
+	ReadLink     string `json:"readLink"`
 	QueryContext struct {
-		OriginalQuery string `json: "originalQuery"`
-		AdultIntent   bool   `json: "adultIntent"`
-	} `json: "queryContext"`
-	TotalEstimatedMatches int `json: totalEstimatedMatches"`
+		OriginalQuery string `json:"originalQuery"`
+		AdultIntent   bool   `json:"adultIntent"`
+	} `json:"queryContext"`
+	TotalEstimatedMatches int `json:"totalEstimatedMatches"`
 	Sort                  []struct {
-		Name       string `json: "name"`
-		ID         string `json: "id"`
-		IsSelected bool   `json: "isSelected"`
-		URL        string `json: "url"`
-	} `json: "sort"`
+		Name       string `json:"name"`
+		ID         string `json:"id"`
+		IsSelected bool   `json:"isSelected"`
+		URL        string `json:"url"`
+	} `json:"sort"`
 	Value []struct {
-		Name  string `json: "name"`
-		URL   string `json: "url"`
+		Name  string `json:"name"`
+		URL   string `json:"url"`
 		Image struct {
 			Thumbnail struct {
-				ContentUrl string `json: "thumbnail"`
-				Width      int    `json: "width"`
-				Height     int    `json: "height"`
-			} `json: "thumbnail"`
-		} `json: "image"`
-		Description string `json: "description"`
+				ContentUrl string `json:"thumbnail"`
+				Width      int    `json:"width"`
+				Height     int    `json:"height"`
+			} `json:"thumbnail"`
+		} `json:"image"`
+		Description string `json:"description"`
 		Provider    []struct {
-			Type string `json: "_type"`
-			Name string `json: "name"`
-		} `json: "provider"`
-		DatePublished string `json: "datePublished"`
-	} `json: "value"`
+			Type string `json:"_type"`
+			Name string `json:"name"`
+		} `json:"provider"`
+		DatePublished string `json:"datePublished"`
+	} `json:"value"`
 }
 
 type BingoApi struct {
@@ -69,7 +70,12 @@ func (b *BingoApi) NewsSearch(q string) (*NewsAnswer, error) {
 	res, err := http.DefaultClient.Do(req)
 
 	// Close the connection.
-	defer res.Body.Close()
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			log.Printf("error:%s", err.Error())
+		}
+	}()
 
 	// Read the results
 	body, err := ioutil.ReadAll(res.Body)
