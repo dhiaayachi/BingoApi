@@ -2,6 +2,8 @@ package BingoApi
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -65,7 +67,7 @@ func (b *BingoApi) NewsSearch(q string) (*NewsAnswer, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	param := req.URL.Query()
 	req.Header.Add("Ocp-Apim-Subscription-Key", b.ClientKey)
@@ -73,7 +75,12 @@ func (b *BingoApi) NewsSearch(q string) (*NewsAnswer, error) {
 	param.Add("freshness", "Day")
 	req.URL.RawQuery = param.Encode()
 	res, err := b.Client.Do(req)
-
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode >= 400 {
+		return nil, errors.New(fmt.Sprintf("server error Status:%d", res.StatusCode))
+	}
 	// Close the connection.
 	defer func() {
 		err := res.Body.Close()
