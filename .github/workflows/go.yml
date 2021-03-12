@@ -24,4 +24,7 @@ jobs:
     - name: Test
       env:
         CLIENT_KEY: ${{ secrets.CLIENT_KEY }}
-      run: go test -v ./...
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: |
+        go test -race -coverprofile=coverage.txt -covermode=atomic
+        bash <(curl -s https://codecov.io/bash)
