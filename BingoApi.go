@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -66,39 +65,36 @@ func (b *BingoApi) NewsSearch(q string) (*NewsAnswer, error) {
 	url := baseUrl + "news/search"
 
 	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	param := req.URL.Query()
-	req.Header.Add("Ocp-Apim-Subscription-Key", b.ClientKey)
-	param.Add("q", q)
-	param.Add("freshness", "Day")
-	req.URL.RawQuery = param.Encode()
-	res, err := b.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if res.StatusCode >= 400 {
-		return nil, errors.New(fmt.Sprintf("server error Status:%d", res.StatusCode))
-	}
-	// Close the connection.
-	defer func() {
-		err := res.Body.Close()
+	var ans *NewsAnswer
+	if req != nil && err == nil {
+
+		param := req.URL.Query()
+		req.Header.Add("Ocp-Apim-Subscription-Key", b.ClientKey)
+		param.Add("q", q)
+		param.Add("freshness", "Day")
+		req.URL.RawQuery = param.Encode()
+		res, err := b.Client.Do(req)
 		if err != nil {
-			log.Printf("error:%s", err.Error())
+			return nil, err
 		}
-	}()
+		if res.StatusCode >= 400 {
+			return nil, errors.New(fmt.Sprintf("server error Status:%d", res.StatusCode))
+		}
+		// Close the connection.
+		defer func() {
+			_ = res.Body.Close()
+		}()
 
-	// Read the results
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
+		// Read the results
+		body, err := ioutil.ReadAll(res.Body)
+		if body != nil && err == nil {
+			ans = new(NewsAnswer)
+			err = json.Unmarshal(body, ans)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-	ans := new(NewsAnswer)
-	err = json.Unmarshal(body, ans)
-	if err != nil {
-		return nil, err
 	}
-	return ans, nil
+	return ans, err
 }
